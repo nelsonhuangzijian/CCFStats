@@ -22,7 +22,7 @@ python3 scripts/build_release.py
 python3 scripts/check_release.py
 ```
 
-生成的安装包为 `dist/ccf-scholar-1.0.0.zip`，manifest 位于 ZIP 根目录。版本号以 `src/manifest.json` 为准；首次公开发布后，应递增版本号再分发变更。
+生成的安装包为 `dist/CCFStats-1.0.0.zip`，manifest 位于 ZIP 根目录。版本号以 `src/manifest.json` 为准；首次公开发布后，应递增版本号再分发变更。
 
 ## 功能范围
 

@@ -42,7 +42,7 @@
 
 ## 安装
 
-在本仓库的 **Releases** 中下载 `ccf-scholar-1.0.0.zip`。
+在本仓库的 **Releases** 中下载 `CCFStats-1.0.0.zip`。
 
 1. 解压 ZIP，保留全部文件。
 2. 在 Chrome 地址栏打开 `chrome://extensions/`。

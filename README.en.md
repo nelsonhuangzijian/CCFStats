@@ -42,7 +42,7 @@ Unresolved venues, incomplete information and failed requests do not by themselv
 
 ## Installation
 
-Download `ccf-scholar-1.0.0.zip` from this repository's **Releases**.
+Download `CCFStats-1.0.0.zip` from this repository's **Releases**.
 
 1. Extract the ZIP and keep all files.
 2. Open `chrome://extensions/` in Chrome.

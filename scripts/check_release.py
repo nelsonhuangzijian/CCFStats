@@ -16,7 +16,7 @@ for size,rel in m['icons'].items():
 assert (source/'LICENSE').read_text()==(ROOT/'LICENSE').read_text()
 assert (ROOT/'LICENSE').read_text().startswith('MIT License\n')
 assert (source/'ThirdPartyLicenses.md').read_bytes()==(ROOT/'ThirdPartyLicenses.md').read_bytes()
-archive=ROOT/'dist'/f'ccf-scholar-{m["version"]}.zip'
+archive=ROOT/'dist'/f'CCFStats-{m["version"]}.zip'
 with zipfile.ZipFile(archive) as z:
  assert z.testzip() is None and 'manifest.json' in z.namelist()
  assert len(z.namelist())==19

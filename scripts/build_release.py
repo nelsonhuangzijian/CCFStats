@@ -6,7 +6,7 @@ SOURCE=ROOT/'src'
 manifest=json.loads((SOURCE/'manifest.json').read_text())
 assert manifest['manifest_version']==3
 assert all('scholar.google.' in pattern for entry in manifest['content_scripts'] for pattern in entry['matches'])
-version=manifest['version'];name=f'ccf-scholar-{version}'
+version=manifest['version'];name=f'CCFStats-{version}'
 dest=ROOT/'dist'/name;dest.mkdir(parents=True,exist_ok=True)
 # Remove the obsolete notice name when rebuilding an existing output folder.
 (dest/'THIRD_PARTY_LICENSES.txt').unlink(missing_ok=True)
