@@ -1,0 +1,37 @@
+(() => {
+  const E=CCF_ENGINE;let passed=0;
+  const eq=(a,b)=>{if(JSON.stringify(a)!==JSON.stringify(b))throw Error(JSON.stringify(a)+' != '+JSON.stringify(b));};
+  function test(name,fn){try{fn();passed++;console.log('PASS '+name);}catch(e){throw Error(name+': '+e.message);}}
+  const check=(text,abbr,rank,kind='')=>{const v=E.matchVenue(text,kind)?.venue;eq(v?.abbr,abbr);eq(v?.rank,rank);};
+  const icde='2018 IEEE 34th international conference on data engineering (ICDE), 617-628, 2018';
+  const icdm='2021 IEEE International Conference on Data Mining (ICDM), 817-826, 2021';
+  const sigir='Proceedings of the 45th International ACM SIGIR Conference on research and ..., 2022';
+  const fullSigir='Proceedings of the 45th International ACM SIGIR Conference on Research and Development in Information Retrieval, 2022';
+  test('Screenshot ICDE with year ordinal acronym and pages',()=>check(icde,'ICDE','A'));
+  test('Screenshot ICDM with year acronym and pages',()=>check(icdm,'ICDM','B'));
+  test('Full SIGIR proceedings title',()=>check(fullSigir,'SIGIR','A'));
+  test('Truncated SIGIR yields a named candidate',()=>eq(E.venueCandidate(sigir)?.venue.abbr,'SIGIR'));
+  test('Truncated SIGIR is not counted as a confirmed venue',()=>eq(E.matchVenue(sigir),null));
+  test('Unicode ellipsis SIGIR yields candidate',()=>eq(E.venueCandidate(sigir.replace('...','…'))?.venue.abbr,'SIGIR'));
+  test('ICDE without parenthesized acronym',()=>check('2018 IEEE 34th International Conference on Data Engineering, 617–628, 2018','ICDE','A'));
+  test('ICDE bracket-only mismatch rejected',()=>eq(E.matchVenue('International Conference on Data Mining (ICDE)'),null));
+  test('Unknown conference with ICDE acronym not guessed',()=>eq(E.matchVenue('Unknown Conference on Other Topics (ICDE)'),null));
+  test('ICDE workshop not promoted by acronym',()=>eq(E.matchVenue('2018 IEEE 34th International Conference on Data Engineering Workshops (ICDE), 10-15, 2018'),null));
+  test('SIGIR companion excluded after wrapper normalization',()=>eq(E.matchVenue(fullSigir.replace(', 2022',' Companion, 2022')),null));
+  test('Truncated SIGIR workshop has no main-conference candidate',()=>eq(E.venueCandidate(sigir.replace('research and','workshops on')),null));
+  test('Generic truncated conference prefix not guessed',()=>eq(E.venueCandidate('Proceedings of the 45th International Conference on ...'),null));
+  test('Short truncated acronym still not guessed',()=>eq(E.venueCandidate('CVPR…'),null));
+  test('Journal name volume issue pages year',()=>check('IEEE Transactions on Knowledge and Data Engineering 33 (5), 1817-1829, 2021','TKDE','A','journal'));
+  test('Publisherless journal name remains uniquely matched',()=>check('Transactions on Pattern Analysis and Machine Intelligence 45 (2), 1-10','TPAMI','A','journal'));
+  test('Year inside proceedings prefix',()=>check('Proceedings of the 2018 International Conference on Management of Data, 12-20','SIGMOD','A'));
+  test('Normalized venue does not cross kind',()=>eq(E.matchVenue(icde,'journal'),null));
+  test('Three screenshot cases count A1 B1 and pending1',()=>{const rows=[icde,icdm,sigir].map((venue,i)=>E.classify({id:String(i),venue,firstAuthor:'San Zhang',source:'scholar'},['San Zhang'],''));eq(E.summary(rows),{A:1,B:1,C:0,pending:1,nonfirst:0,total:3});eq(rows[2].candidate.abbr,'SIGIR');});
+  test('Completing SIGIR confirms A without manual override',()=>{const row=E.classify({venue:fullSigir,kind:'conference',firstAuthor:'San Zhang',source:'scholar'},['San Zhang'],'');eq(row.matched.abbr,'SIGIR');eq(row.candidate,null);eq(E.summary([row]).A,1);});
+  test('SIGKDD screenshot remains candidate until complete metadata arrives',()=>{const v='Proceedings of the 28th ACM SIGKDD Conference on Knowledge Discovery and ..., 2022';eq(E.matchVenue(v),null);eq(E.venueCandidate(v)?.venue.abbr,'SIGKDD');});
+  test('SIGKDD full proceedings match A',()=>check('Proceedings of the 28th ACM SIGKDD Conference on Knowledge Discovery and Data Mining, 2022','SIGKDD','A'));
+  test('Historical SIGKDD International proceedings match A',()=>check('Proceedings of the 24th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining, 2018','SIGKDD','A'));
+  test('KDD common alias matches A',()=>check('KDD 2022','SIGKDD','A'));
+  test('SIGKDD workshop and companion do not inherit A',()=>{for(const suffix of [' Workshops',' Companion',' Tutorial',' Industry Track'])eq(E.matchVenue('ACM SIGKDD Conference on Knowledge Discovery and Data Mining'+suffix),null);});
+  test('SIGKDD cannot match journal kind',()=>eq(E.matchVenue('KDD','journal'),null));
+  globalThis.CCF_MATCHING_RESULTS={passed};console.log(`${passed} venue matching tests passed`);
+})();

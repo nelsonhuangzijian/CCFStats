@@ -1,0 +1,23 @@
+(()=>{
+ const R=CCF_RESOLVER,E=CCF_ENGINE;let passed=0;
+ const eq=(a,b)=>{if(JSON.stringify(a)!==JSON.stringify(b))throw Error(JSON.stringify(a)+' != '+JSON.stringify(b));};
+ const test=(name,fn)=>{fn();passed++;console.log('PASS '+name);};
+ const ase={title:'Towards Fully Automated Medical Imaging Code Generation via Validation-Based Context Engineering',year:'2026',firstAuthor:'Z Zhao',venue:'Proceedings of the 41st IEEE/ACM International Conference on Automated …'};
+ const icse={title:'Mactg: Multi-agent collaborative thought graph for automatic programming',year:'2026',firstAuthor:'Z Zhao',venue:'Proceedings of the 2026 IEEE/ACM 48th International Conference on Software ...'};
+ const hit=(p,folder,venue,type='Conference and Workshop Papers',changes={})=>({info:{title:p.title,year:p.year,venue,type,url:'https://dblp.org/rec/'+folder+'/Example26',...changes}});
+ const payload=(...hit)=>({result:{hits:{'@total':String(hit.length),hit}}});
+ const resolve=(p,...hits)=>R.resolveDblp(payload(...hits),p);
+ test('Screenshot prefixes resolve locally using verified editions and constrain remote hints',()=>{for(const [p,abbr] of [[ase,'ASE'],[icse,'ICSE']]){eq(E.venueStatus(p).matched?.abbr,abbr);eq(R.venueHints(p).map(v=>v.abbr),[abbr]);}});
+ test('ASE main paper wins over a same-title preprint returned first',()=>eq(resolve(ase,hit(ase,'journals/corr','CoRR','Informal Publications'),hit(ase,'conf/kbse','ASE'))?.abbr,'ASE'));
+ test('ICSE main paper wins over a same-title preprint returned first',()=>eq(resolve(icse,hit(icse,'journals/corr','CoRR','Informal Publications'),hit(icse,'conf/icse','ICSE'))?.abbr,'ICSE'));
+ test('A lone preprint cannot turn a conference row into N',()=>{for(const p of [ase,icse]){const record=R.selectRecord(payload(hit(p,'journals/corr','CoRR','Informal Publications')),p);eq(record,null);eq(R.classifyRecord(record).state,'unmatched');}});
+ test('Unrelated same-year formal venue is rejected',()=>eq(resolve(icse,hit(icse,'conf/cikm','CIKM')),null));
+ test('Same venue with a different paper title is rejected',()=>eq(resolve(icse,hit(icse,'conf/icse','ICSE',undefined,{title:'Different paper'})),null));
+ test('Distant-year same-title main venue is rejected even for one hit',()=>eq(resolve(ase,hit(ase,'conf/kbse','ASE',undefined,{year:'2022'})),null));
+ test('Workshops cannot inherit main ranks through the expected folder',()=>eq(resolve(ase,hit(ase,'conf/kbse','ASE Workshops')),null));
+ test('Equally plausible competing venues do not use result order',()=>eq(resolve({...icse,venue:'International Conference on Software ...'},hit(icse,'conf/icse','ICSE'),hit(icse,'conf/icsm','ICSME')),null));
+ test('Old conference-preprint cache is incompatible; verified formal cache remains valid',()=>{eq(R.recordCompatible(hit(ase,'journals/corr','CoRR','Informal Publications').info,ase),false);eq(R.recordCompatible(hit(ase,'conf/kbse','ASE').info,ase),true);});
+ test('Explicit arXiv and workshop rows retain existing N behavior',()=>{const p={...ase,venue:'arXiv preprint arXiv:2608.29016'};eq(R.venueHints(p),[]);eq(R.classifyRecord(R.selectRecord(payload(hit(p,'journals/corr','CoRR','Informal Publications')),p)).state,'non_ccf');eq(R.venueHints({...ase,venue:ase.venue+' Workshops'}),[]);});
+ test('Punctuation, case, publisher order and changed ordinal do not break context',()=>{const p={...icse,venue:icse.venue.replace('48th','49th').replace('IEEE/ACM','ACM/IEEE')};eq(resolve(p,hit(p,'conf/icse','ICSE',undefined,{title:p.title.toUpperCase()+'.'}))?.abbr,'ICSE');});
+ globalThis.CCF_CONFERENCE_CONTEXT_RESULTS={passed};console.log(`${passed} conference context tests passed`);
+})();

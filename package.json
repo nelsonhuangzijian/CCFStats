@@ -1,0 +1,12 @@
+{
+  "name": "ccf-scholar-statistics",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "description": "Build/test tooling, not an npm publication.",
+  "scripts": {
+    "test": "node src/tests/run-tests.mjs && node src/tests/dblp-paper.test.mjs && node src/tests/queue-cache.test.mjs",
+    "build": "python3 scripts/build_release.py",
+    "check:release": "python3 scripts/check_release.py"
+  }
+}

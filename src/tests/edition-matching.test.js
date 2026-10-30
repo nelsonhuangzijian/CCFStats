@@ -1,0 +1,24 @@
+(()=>{
+ const E=CCF_ENGINE;let passed=0;
+ const eq=(a,b)=>{if(JSON.stringify(a)!==JSON.stringify(b))throw Error(JSON.stringify(a)+' != '+JSON.stringify(b));};
+ const test=(name,fn)=>{try{fn();passed++;console.log('PASS '+name);}catch(e){throw Error(name+': '+e.message);}};
+ const ase='Proceedings of the 41st IEEE/ACM International Conference on Automated …';
+ const icse='Proceedings of the 2026 IEEE/ACM 48th International Conference on Software ...';
+ const status=(venue,year='2026',extra={})=>E.venueStatus({venue,year,source:'scholar',...extra});
+ test('User ASE screenshot gets A from the local catalogue using the row year',()=>{const r=status(ase);eq(r.matched?.abbr,'ASE');eq(r.matched.rank,'A');eq(r.venueMethod,'catalog');});
+ test('User ICSE screenshot gets A from the local catalogue',()=>{const r=status(icse);eq(r.matched?.abbr,'ICSE');eq(r.matched.rank,'A');eq(r.venueMethod,'catalog');});
+ test('All six verified annual editions work in different publisher orders and ellipsis styles',()=>{for(const [abbr,year,edition] of [['ASE',2024,39],['ASE',2025,40],['ASE',2026,41],['ICSE',2024,46],['ICSE',2025,47],['ICSE',2026,48]])for(const publisher of ['IEEE/ACM','ACM/IEEE','IEEE and ACM','IEEE & ACM'])for(const dots of ['…','...']){const venue=`Proceedings of the ${year} ${publisher} ${edition}th International Conference on ${abbr==='ASE'?'Automated':'Software'} ${dots}`;eq(status(venue,String(year)).matched?.abbr,abbr);}});
+ test('Inline year works without a row year',()=>eq(E.matchVenue(icse)?.venue.abbr,'ICSE'));
+ test('Known edition without any year stays unresolved',()=>eq(E.matchVenue(ase),null));
+ test('Wrong edition for a verified year stays unresolved',()=>{eq(status(ase.replace('41st','40th')).matched,null);eq(status(icse.replace('48th','47th')).matched,null);});
+ test('Conflicting inline and row years stay unresolved',()=>eq(status(icse,'2025').matched,null));
+ test('Future and unknown editions are not extrapolated',()=>eq(status(ase.replace('41st','42nd'),'2027').matched,null));
+ test('A generic conference prefix is insufficient even with the right edition',()=>eq(status(icse.replace('on Software','on')).matched,null));
+ test('Missing or different publishers do not confirm a truncated name',()=>{for(const publisher of ['IEEE','ACM','AAAI',''])eq(status(ase.replace('IEEE/ACM',publisher)).matched,null);});
+ test('Workshop, companion and explicit alternate tracks are not locally promoted',()=>{for(const suffix of [' Workshops',' Companion',' Industry Track',' Tutorials',' (ICSE-SEET)'])eq(status(icse+suffix).matched,null);});
+ test('Unrelated full words and multiple ordinals do not inherit a rank',()=>{eq(status(ase.replace('Automated','Automatic')).matched,null);eq(status(ase.replace('41st','41st 48th')).matched,null);});
+ test('Unicode digits and nonbreaking spaces retain the verified edition',()=>eq(status(ase.replace('41st','４１st').replaceAll(' ','\u00a0')).matched?.abbr,'ASE'));
+ test('Local identification overrides an old N or wrong remote venue without changing provenance',()=>{const wrong=CCF_CATALOG.venues.find(v=>v.abbr==='CIKM');const r=status(ase,'2026',{nonCcf:true,lookupVenueId:wrong.id,lookupRecord:{venue:'CoRR'}});eq(r.matched?.abbr,'ASE');eq(r.nonCcf,false);eq(r.venueMethod,'catalog');});
+ test('Catalogue source URLs are recorded for every annual index entry',()=>eq(CCF_CATALOG.editions.every(e=>/^https:\/\//.test(e.source)),true));
+ globalThis.CCF_EDITION_RESULTS={passed};console.log(`${passed} local edition tests passed`);
+})();
